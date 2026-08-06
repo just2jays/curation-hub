@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+.git/
+
+pb_data/*.db
+pb_data/*.db-*
+pb_data/.notify/
+
+pb_public/*
+!pb_public/.gitkeep
+
+node_modules/
+dist/
+build/

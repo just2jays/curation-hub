@@ -1,0 +1,9 @@
+.git
+.DS_Store
+.env
+
+pb_data/*.db
+pb_data/*.db-*
+pb_data/.notify/
+
+README.md

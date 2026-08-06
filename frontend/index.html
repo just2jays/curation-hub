@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Curator Hub | Personal Places & Items</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PocketBase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* View Transitions API Animations */
+        @media (prefers-reduced-motion: no-preference) {
+            ::view-transition-old(root) {
+                animation: 90ms cubic-bezier(0.4, 0, 1, 1) both fade-out;
+            }
+            ::view-transition-new(root) {
+                animation: 210ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in;
+            }
+            
+            ::view-transition-old(selected-card),
+            ::view-transition-new(selected-card) {
+                height: 100%;
+                animation: 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+            }
+        }
+        
+        @keyframes fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Focus rings for keyboard accessibility */
+        *:focus-visible {
+            outline: 2px solid #0ea5e9;
+            outline-offset: 2px;
+        }
+
+        /* Hide scrollbars but keep functionality */
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-none {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+
+    <div id="setupView" class="min-h-screen flex items-center justify-center px-4 py-10 hidden">
+        <div class="w-full max-w-3xl rounded-3xl border border-slate-800 bg-slate-950/90 p-8 md:p-10 shadow-2xl shadow-slate-950/60 relative overflow-hidden">
+            <div class="absolute -top-20 -right-24 h-48 w-48 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                        <i class="fa-solid fa-compass text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white">Curator<span class="text-sky-400">Hub</span></h1>
+                        <p id="setupIntro" class="text-sm md:text-base text-slate-400">This is your first time starting the app. Let's get you set up.</p>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-[1.4fr,0.9fr]">
+                    <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+                        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-4">First-Time Setup</h2>
+                        <ol id="setupSteps" class="space-y-3 text-sm text-slate-300 list-decimal list-inside"></ol>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 space-y-4">
+                        <div>
+                            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-2">Current Status</h2>
+                            <div id="setupStatusPills" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <div class="text-sm text-slate-400 space-y-2">
+                            <p>Frontend access comes from records in a PocketBase auth collection named <span class="text-sky-300 font-semibold">users</span>.</p>
+                            <p>Your first content collection can have any name. The current UI works best when records include a title field named <span class="text-sky-300 font-semibold">title</span> or <span class="text-sky-300 font-semibold">Title</span>.</p>
+                            <p>Optional fields already supported by the UI are <span class="text-sky-300 font-semibold">description</span>, <span class="text-sky-300 font-semibold">location</span>, and <span class="text-sky-300 font-semibold">tags</span>.</p>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                            <a href="/_/" class="inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all shadow-lg shadow-sky-500/20">
+                                <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
+                                <span>Open PocketBase Dashboard</span>
+                            </a>
+                            <button onclick="refreshBootstrapState(true)" class="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold px-4 py-3 rounded-xl text-sm transition-all border border-slate-800">
+                                <i class="fa-solid fa-rotate-right text-xs"></i>
+                                <span>Reload Setup Status</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="authView" class="min-h-screen flex items-center justify-center px-4 py-10 hidden">
+        <div class="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-950/90 p-8 shadow-2xl shadow-slate-950/60 relative overflow-hidden">
+            <div class="absolute -top-16 -right-16 h-40 w-40 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -left-16 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+                        <i class="fa-solid fa-compass text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white">Curator<span class="text-sky-400">Hub</span></h1>
+                        <p class="text-sm text-slate-400">Sign in with a PocketBase user from the <span class="text-sky-300 font-semibold">users</span> auth collection.</p>
+                    </div>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                    <div>
+                        <label for="loginEmail" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Email</label>
+                        <input id="loginEmail" type="email" autocomplete="email" required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" placeholder="you@example.com">
+                    </div>
+
+                    <div>
+                        <label for="loginPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+                        <input id="loginPassword" type="password" autocomplete="current-password" required class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" placeholder="Enter your password">
+                    </div>
+
+                    <p id="loginError" class="hidden rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300"></p>
+
+                    <button id="loginSubmitBtn" type="submit" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all shadow-lg shadow-sky-500/20 active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span>Sign In</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="appShell" class="hidden">
+    <!-- Top Navigation -->
+    <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" onclick="handleBackClick(event)" class="flex items-center space-x-3 group focus:outline-none focus:ring-2 focus:ring-sky-500/50 rounded-xl p-1">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-compass text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg text-white tracking-tight">Curator<span class="text-sky-400">Hub</span></span>
+                        <span class="hidden sm:inline-block text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full ml-2 border border-slate-700">PocketBase Client</span>
+                    </div>
+                </a>
+
+                <div class="flex items-center space-x-3">
+                    <div id="currentUserPill" class="hidden items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-slate-900 text-slate-300 border border-slate-800">
+                        <i class="fa-solid fa-user text-[10px] text-sky-400"></i>
+                        <span id="currentUserText"></span>
+                    </div>
+
+                    <!-- PocketBase Status Pill -->
+                    <div id="connectionStatus" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 transition-all">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        <span id="statusText">Checking PocketBase...</span>
+                    </div>
+
+                    <!-- Add New Item Button -->
+                    <button onclick="openAddModal()" class="bg-sky-500 hover:bg-sky-400 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all flex items-center space-x-2 shadow-lg shadow-sky-500/20 active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span class="hidden sm:inline">Add Content</span>
+                    </button>
+
+                    <button onclick="logout()" class="bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium px-4 py-2 rounded-xl text-sm transition-all flex items-center space-x-2 border border-slate-800 active:scale-95">
+                        <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                        <span class="hidden sm:inline">Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- List View -->
+        <div id="listView">
+            <!-- Filter Controls Container -->
+            <div class="bg-slate-950 border border-slate-800/80 rounded-2xl p-5 mb-8 shadow-xl">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+                    
+                    <!-- Collection tabs — populated dynamically from PocketBase -->
+                    <div class="flex items-center space-x-1 overflow-x-auto pb-2 lg:pb-0 scrollbar-none" id="typeTabs">
+                        <button onclick="setTypeFilter('all')" data-type="all" class="type-tab active bg-sky-500 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all">
+                            <i class="fa-solid fa-layer-group mr-2 text-xs"></i>All
+                        </button>
+                        <span id="collectionTabs" class="contents"></span>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative min-w-[260px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search names, notes..." 
+                            class="w-full bg-slate-900 border border-slate-700/60 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all">
+                    </div>
+                </div>
+
+                <!-- Granular Filter Bar -->
+                <div class="pt-4 flex flex-wrap items-center justify-between gap-4">
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Active Tag Chips Filter -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-400"><i class="fa-solid fa-tags mr-1"></i>Tag Filter:</span>
+                            <div id="tagChips" class="flex flex-wrap gap-1.5"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-slate-400">Sort by:</span>
+                        <select id="sortOrder" onchange="applyFilters()" class="bg-slate-900 border border-slate-800 text-xs text-slate-300 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer">
+                            <option value="newest" class="bg-slate-900">Newest Added</option>
+                            <option value="name_asc" class="bg-slate-900">Name (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Counter & Status -->
+            <div class="flex items-center justify-between mb-6 px-1">
+                <h2 class="text-slate-400 text-sm font-medium">
+                    Showing <span id="itemCount" class="text-white font-semibold">0</span> items
+                </h2>
+                <button onclick="resetFilters()" class="text-xs text-sky-400 hover:text-sky-300 flex items-center space-x-1">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Reset Filters</span>
+                </button>
+            </div>
+
+            <!-- Content Cards Grid -->
+            <div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamic Cards Populated by JS -->
+            </div>
+
+            <!-- Empty State View -->
+            <div id="emptyState" class="hidden text-center py-16 px-4 bg-slate-950/50 rounded-2xl border border-slate-800/50">
+                <div class="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-500 mb-4 text-2xl">
+                    <i class="fa-solid fa-filter"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-1">No matching content found</h3>
+                <p class="text-slate-400 text-sm max-w-sm mx-auto mb-6">Try broadening your search query, lowering the star rating filter, or unchecking tag filters.</p>
+                <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-4 py-2 rounded-xl transition-all">Clear All Filters</button>
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div id="detailView" class="hidden" tabindex="-1">
+            <div class="max-w-4xl mx-auto">
+                <!-- Navigation header -->
+                <div class="flex items-center justify-between mb-6">
+                    <a href="/" onclick="handleBackClick(event)" class="group inline-flex items-center space-x-2 text-sm text-slate-400 hover:text-sky-400 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/50 rounded-xl px-3.5 py-2 bg-slate-950/40 border border-slate-800/80">
+                        <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                        <span>Back to Explorer</span>
+                    </a>
+                </div>
+
+                <!-- Premium glass card -->
+                <div class="bg-slate-950/60 backdrop-blur-md border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
+                    <!-- Glow decoration -->
+                    <div class="absolute -right-24 -top-24 w-48 h-48 rounded-full bg-sky-500/10 blur-3xl pointer-events-none"></div>
+                    <div class="absolute -left-24 -bottom-24 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+                    <!-- Loader State (Skeleton) -->
+                    <div id="detailLoader" class="animate-pulse space-y-6">
+                        <div class="h-6 w-24 bg-slate-800 rounded-full"></div>
+                        <div class="h-10 w-2/3 bg-slate-800 rounded-xl"></div>
+                        <div class="h-4 w-1/3 bg-slate-800 rounded-md"></div>
+                        <div class="border-t border-slate-800 my-6"></div>
+                        <div class="space-y-3">
+                            <div class="h-4 bg-slate-800/60 rounded w-full"></div>
+                            <div class="h-4 bg-slate-800/60 rounded w-5/6"></div>
+                            <div class="h-4 bg-slate-800/60 rounded w-4/5"></div>
+                        </div>
+                    </div>
+
+                    <!-- Not Found State -->
+                    <div id="detailNotFound" class="hidden text-center py-12">
+                        <div class="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-450 mb-4 text-2xl">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-white mb-2">Item Not Found</h2>
+                        <p class="text-slate-400 text-sm max-w-sm mx-auto mb-6">The item you are looking for does not exist or has been deleted.</p>
+                        <a href="/" onclick="handleBackClick(event)" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-4 py-2 rounded-xl transition-all inline-block">Return to Home</a>
+                    </div>
+
+                    <!-- Main content layout -->
+                    <div id="detailContent" class="hidden flex flex-col md:flex-row md:justify-between gap-8 relative z-10">
+                        <!-- Main Content (Left) -->
+                        <div class="flex-1 space-y-6">
+                            <div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20 uppercase tracking-wider mb-3">
+                                    <i class="fa-solid fa-layer-group mr-1.5 text-[9px]"></i>
+                                    <span id="detailCollection">Collection</span>
+                                </span>
+                                <h1 id="detailHeading" tabindex="-1" class="text-3xl md:text-5xl font-black text-white tracking-tight focus:outline-none">
+                                    Item Title
+                                </h1>
+                                <div id="detailLocationContainer" class="flex items-center gap-2 text-slate-400 mt-3 text-sm">
+                                    <i class="fa-solid fa-location-dot text-sky-405"></i>
+                                    <span id="detailLocation">Location</span>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-slate-800 my-6"></div>
+
+                            <div>
+                                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</h2>
+                                <div id="detailDescription" class="text-slate-200 text-sm md:text-base leading-relaxed bg-slate-900/40 p-4 md:p-6 rounded-2xl border border-slate-800 min-h-[120px] prose prose-invert">
+                                    No description provided.
+                                </div>
+                            </div>
+
+                            <div>
+                                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tags</h2>
+                                <div id="detailTags" class="flex flex-wrap gap-2">
+                                    <!-- tags -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Info (Right) -->
+                        <div class="w-full md:w-72 space-y-4">
+                            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+                                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Metadata</h3>
+                                
+                                <div class="space-y-3 text-xs">
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Created:</span>
+                                        <span id="detailCreated" class="text-slate-300 font-medium">-</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-slate-500">Updated:</span>
+                                        <span id="detailUpdated" class="text-slate-300 font-medium">-</span>
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-slate-800 pt-4 space-y-2">
+                                    <button id="detailEditBtn" class="w-full bg-sky-500 hover:bg-sky-400 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center space-x-2 shadow-lg shadow-sky-500/10 active:scale-98">
+                                        <i class="fa-solid fa-pen"></i>
+                                        <span>Edit Item</span>
+                                    </button>
+                                    <button id="detailDeleteBtn" class="w-full bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-400 font-semibold px-4 py-2.5 rounded-xl text-xs transition-all flex items-center justify-center space-x-2 active:scale-98">
+                                        <i class="fa-solid fa-trash"></i>
+                                        <span>Delete Item</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Item Modal -->
+    <div id="addModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-200">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl transform scale-95 transition-all max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white">Add Entry</h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="addContentForm" onsubmit="handleFormSubmit(event)" class="mt-4 space-y-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Collection *</label>
+                    <select id="formCollection" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                        <!-- populated dynamically -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Title *</label>
+                    <input type="text" id="formName" required placeholder="e.g. The Rustic Oak" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Description</label>
+                    <textarea id="formDescription" rows="2" placeholder="Notes, impressions..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Location</label>
+                    <input type="text" id="formLocation" placeholder="e.g. 123 Main St, Downtown" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div class="relative">
+                    <label class="block text-xs text-slate-400 mb-1">Tags <span class="text-slate-600">(type &amp; press Enter or comma)</span></label>
+                    <div id="tagInputContainer" onclick="document.getElementById('tagInputField').focus()" class="min-h-[42px] flex flex-wrap gap-1.5 items-center bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 cursor-text focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500 transition-all">
+                        <!-- selected tag chips rendered here by JS -->
+                        <input type="text" id="tagInputField" placeholder="e.g. patio, cozy..." autocomplete="off"
+                            class="flex-1 min-w-[120px] bg-transparent text-sm text-slate-200 placeholder-slate-600 focus:outline-none">
+                    </div>
+                    <ul id="tagSuggestions" class="hidden absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-xl"></ul>
+                </div>
+
+                <div class="pt-3 flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition-all">Cancel</button>
+                    <button type="submit" class="bg-sky-500 hover:bg-sky-400 text-white font-medium px-5 py-2 rounded-xl text-xs transition-all shadow-lg shadow-sky-500/20">Save Content</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2"></div>
+
+    <script>
+        // App State
+        const AUTH_COLLECTION = 'users';
+        let items = [];
+        let availableCollections = [];
+        let activeTypeFilter = 'all';
+        let selectedTags = new Set();
+        let isPocketBaseConnected = false;
+        let formSelectedTags = new Set();
+        let editingItem = null;
+        let hasLoadedItems = false;
+        let bootstrapState = {
+            collections: [],
+            hasUsersAuthCollection: false,
+        };
+
+        // ── Tag input widget ──────────────────────────────────────────────
+        function initTagInput() {
+            const input = document.getElementById('tagInputField');
+            const suggestions = document.getElementById('tagSuggestions');
+
+            input.addEventListener('input', () => {
+                const val = input.value.trim();
+                if (!val) { suggestions.classList.add('hidden'); return; }
+                const allTags = [...new Set(items.flatMap(i => i.tags || []))];
+                const matches = allTags.filter(t =>
+                    t.toLowerCase().includes(val.toLowerCase()) && !formSelectedTags.has(t)
+                );
+                // also offer the typed value itself if not already present
+                if (!allTags.some(t => t.toLowerCase() === val.toLowerCase()) && !formSelectedTags.has(val)) {
+                    matches.unshift(val);
+                }
+                if (!matches.length) { suggestions.classList.add('hidden'); return; }
+                suggestions.innerHTML = matches.map(t =>
+                    `<li onclick="selectTagSuggestion('${escapeHtml(t)}')" class="px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 cursor-pointer">${escapeHtml(t)}</li>`
+                ).join('');
+                suggestions.classList.remove('hidden');
+            });
+
+            input.addEventListener('keydown', e => {
+                if ((e.key === 'Enter' || e.key === ',') && input.value.trim()) {
+                    e.preventDefault();
+                    addFormTag(input.value.trim());
+                    input.value = '';
+                    suggestions.classList.add('hidden');
+                }
+                if (e.key === 'Backspace' && !input.value && formSelectedTags.size) {
+                    const last = [...formSelectedTags].at(-1);
+                    formSelectedTags.delete(last);
+                    renderFormTagChips();
+                }
+            });
+
+            document.addEventListener('click', e => {
+                if (!e.target.closest('#tagInputContainer') && !e.target.closest('#tagSuggestions')) {
+                    suggestions.classList.add('hidden');
+                }
+            });
+        }
+
+        function selectTagSuggestion(tag) {
+            addFormTag(tag);
+            document.getElementById('tagInputField').value = '';
+            document.getElementById('tagSuggestions').classList.add('hidden');
+            document.getElementById('tagInputField').focus();
+        }
+
+        function addFormTag(tag) {
+            const clean = tag.replace(/,/g, '').trim();
+            if (!clean || formSelectedTags.has(clean)) return;
+            formSelectedTags.add(clean);
+            renderFormTagChips();
+        }
+
+        function removeFormTag(tag) {
+            formSelectedTags.delete(tag);
+            renderFormTagChips();
+        }
+
+        function renderFormTagChips() {
+            const container = document.getElementById('tagInputContainer');
+            const input = document.getElementById('tagInputField');
+            // remove old chips, keep the input
+            container.querySelectorAll('.form-tag-chip').forEach(el => el.remove());
+            [...formSelectedTags].forEach(tag => {
+                const chip = document.createElement('span');
+                chip.className = 'form-tag-chip flex items-center gap-1 bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs px-2 py-0.5 rounded-lg';
+                chip.innerHTML = `${escapeHtml(tag)}<button type="button" onclick="removeFormTag('${escapeHtml(tag)}')" class="text-sky-400 hover:text-white leading-none">&times;</button>`;
+                container.insertBefore(chip, input);
+            });
+        }
+
+        function clearFormTags() {
+            formSelectedTags.clear();
+            renderFormTagChips();
+            document.getElementById('tagInputField').value = '';
+            document.getElementById('tagSuggestions').classList.add('hidden');
+        }
+        
+        const pb = new PocketBase(window.location.origin);
+
+        function normalizeRecord(r, collectionName) {
+            const raw = r.tags;
+            const tags = Array.isArray(raw) ? raw : (raw ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : []);
+            return { ...r, collectionName, name: r.Title || r.title || '', tags };
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTagInput();
+            pb.authStore.onChange(() => syncAuthUi());
+
+            // Listen to browser back/forward buttons
+            window.addEventListener('popstate', () => {
+                handleRouting();
+            });
+
+            await refreshBootstrapState();
+
+            if (isSetupReady()) {
+                if (pb.authStore.isValid) {
+                    await initializeAuthenticatedApp();
+                } else {
+                    handleLoggedOutState();
+                }
+            } else {
+                handleSetupState();
+            }
+        });
+
+        function isSetupReady() {
+            return bootstrapState.hasUsersAuthCollection && bootstrapState.collections.length > 0;
+        }
+
+        function getSetupSteps() {
+            let steps = [
+                'Open the PocketBase dashboard.',
+                'Create the first PocketBase superuser if this is a brand new instance.',
+            ];
+
+            if (!bootstrapState.hasUsersAuthCollection) {
+                steps = steps.concat([
+                    'Create an auth collection named users and enable password auth.',
+                    'Create at least one users record for anyone who should be allowed into the frontend.',
+                ]);
+            }
+
+            if (bootstrapState.collections.length === 0) {
+                steps = steps.concat([
+                    'Create your first base collection for frontend content. The collection name can be anything.',
+                ]);
+            }
+
+            steps = steps.concat([
+                'Set the collection API rules so authenticated users can list, view, create, update, and delete records.',
+                'Recommended fields for the current UI are title or Title, plus optional description, location, and tags.',
+            ]);
+
+            return steps;
+        }
+
+        function renderSetupState() {
+            const setupIntro = document.getElementById('setupIntro');
+            const setupSteps = document.getElementById('setupSteps');
+            const setupStatusPills = document.getElementById('setupStatusPills');
+
+            const missingUsers = !bootstrapState.hasUsersAuthCollection;
+            const missingCollections = bootstrapState.collections.length === 0;
+            const collectionCountLabel = bootstrapState.collections.length === 1 ? '1 base collection found' : `${bootstrapState.collections.length} base collections found`;
+
+            if (!missingUsers && !missingCollections) {
+                setupIntro.textContent = 'PocketBase is ready. Sign in with a users account to enter the app.';
+            } else if (missingUsers && missingCollections) {
+                setupIntro.textContent = 'This is your first time starting the app. Create a users auth collection and your first content collection to continue.';
+            } else if (missingUsers) {
+                setupIntro.textContent = 'Your content collections exist, but frontend access is not ready until you create the users auth collection.';
+            } else {
+                setupIntro.textContent = 'Frontend login is ready, but you still need to create your first content collection.';
+            }
+
+            setupSteps.innerHTML = getSetupSteps().map(step => `<li>${escapeHtml(step)}</li>`).join('');
+
+            const pills = [
+                {
+                    label: bootstrapState.hasUsersAuthCollection ? 'users auth collection ready' : 'users auth collection missing',
+                    ready: bootstrapState.hasUsersAuthCollection,
+                },
+                {
+                    label: bootstrapState.collections.length > 0 ? collectionCountLabel : 'no base collections yet',
+                    ready: bootstrapState.collections.length > 0,
+                },
+            ];
+
+            setupStatusPills.innerHTML = pills.map(pill => `
+                <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${pill.ready ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}">
+                    <span class="h-2 w-2 rounded-full ${pill.ready ? 'bg-emerald-400' : 'bg-amber-400'}"></span>
+                    <span>${escapeHtml(pill.label)}</span>
+                </span>
+            `).join('');
+        }
+
+        function syncAuthUi() {
+            const setupView = document.getElementById('setupView');
+            const authView = document.getElementById('authView');
+            const appShell = document.getElementById('appShell');
+            const currentUserPill = document.getElementById('currentUserPill');
+            const currentUserText = document.getElementById('currentUserText');
+            const setupRequired = !isSetupReady();
+            const isAuthenticated = pb.authStore.isValid;
+            const authRecord = pb.authStore.record;
+
+            setupView.classList.toggle('hidden', !setupRequired);
+            authView.classList.toggle('hidden', setupRequired || isAuthenticated);
+            appShell.classList.toggle('hidden', setupRequired || !isAuthenticated);
+
+            if (!setupRequired && isAuthenticated && authRecord) {
+                currentUserPill.classList.remove('hidden');
+                currentUserPill.classList.add('flex');
+                currentUserText.textContent = authRecord.name || authRecord.email;
+            } else {
+                currentUserPill.classList.add('hidden');
+                currentUserPill.classList.remove('flex');
+                currentUserText.textContent = '';
+            }
+        }
+
+        async function refreshBootstrapState(forceInitialize = false) {
+            try {
+                const res = await fetch('/api/app/collections');
+                if (!res.ok) throw new Error('collections endpoint unavailable');
+
+                const data = await res.json();
+                bootstrapState = {
+                    collections: data.collections || [],
+                    hasUsersAuthCollection: Boolean(data.hasUsersAuthCollection),
+                };
+            } catch (err) {
+                bootstrapState = {
+                    collections: [],
+                    hasUsersAuthCollection: false,
+                };
+                console.warn('PocketBase bootstrap load failed:', err);
+            }
+
+            renderSetupState();
+            syncAuthUi();
+
+            if (!isSetupReady()) {
+                handleSetupState();
+                return bootstrapState;
+            }
+
+            if (forceInitialize) {
+                if (pb.authStore.isValid) {
+                    await initializeAuthenticatedApp(true);
+                } else {
+                    handleLoggedOutState();
+                }
+            }
+
+            return bootstrapState;
+        }
+
+        function setConnectionStatus(state, text) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            const classes = {
+                loading: 'flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 transition-all',
+                connected: 'flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 transition-all',
+                error: 'flex items-center space-x-2 text-xs px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 transition-all'
+            };
+
+            statusEl.className = classes[state] || classes.loading;
+            statusText.textContent = text;
+        }
+
+        async function initializeAuthenticatedApp(forceReload = false) {
+            syncAuthUi();
+
+            if (forceReload || !hasLoadedItems) {
+                await fetchPocketBaseItems();
+                hasLoadedItems = isPocketBaseConnected;
+                return;
+            }
+
+            handleRouting();
+        }
+
+        function handleLoggedOutState() {
+            if (!isSetupReady()) {
+                handleSetupState();
+                return;
+            }
+
+            hasLoadedItems = false;
+            isPocketBaseConnected = false;
+            items = [];
+            availableCollections = [];
+            editingItem = null;
+            activeTypeFilter = 'all';
+            selectedTags.clear();
+            renderCollectionTabs();
+            renderTagFilterChips();
+            document.getElementById('cardsGrid').innerHTML = '';
+            document.getElementById('itemCount').textContent = '0';
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+            setConnectionStatus('loading', 'Sign in to load PocketBase data');
+            clearLoginError();
+        }
+
+        function handleSetupState() {
+            hasLoadedItems = false;
+            isPocketBaseConnected = false;
+            items = [];
+            availableCollections = [];
+            editingItem = null;
+            activeTypeFilter = 'all';
+            selectedTags.clear();
+            renderCollectionTabs();
+            renderTagFilterChips();
+            document.getElementById('cardsGrid').innerHTML = '';
+            document.getElementById('itemCount').textContent = '0';
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('listView').classList.remove('hidden');
+            clearLoginError();
+            syncAuthUi();
+        }
+
+        function handleAuthFailure(message = 'Session expired. Sign in again.') {
+            pb.authStore.clear();
+            syncAuthUi();
+            handleLoggedOutState();
+            showLoginError(message);
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+
+            if (!isSetupReady()) {
+                handleSetupState();
+                return;
+            }
+
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const submitBtn = document.getElementById('loginSubmitBtn');
+
+            clearLoginError();
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+            try {
+                await pb.collection(AUTH_COLLECTION).authWithPassword(email, password);
+                document.getElementById('loginForm').reset();
+                showToast('Signed in.', 'success');
+                await initializeAuthenticatedApp(true);
+            } catch (err) {
+                showLoginError(getErrorMessage(err, 'Unable to sign in.'));
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }
+        }
+
+        function logout() {
+            pb.authStore.clear();
+            history.pushState(null, '', '/');
+            syncAuthUi();
+            handleLoggedOutState();
+            showToast('Signed out.', 'info');
+        }
+
+        function showLoginError(message) {
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function clearLoginError() {
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = '';
+            errorEl.classList.add('hidden');
+        }
+
+        async function fetchPocketBaseItems() {
+            if (!pb.authStore.isValid) {
+                handleLoggedOutState();
+                return;
+            }
+
+            const bootstrap = await refreshBootstrapState();
+            if (!isSetupReady()) {
+                return;
+            }
+
+            setConnectionStatus('loading', 'Loading PocketBase data...');
+
+            try {
+                availableCollections = bootstrap.collections;
+
+                renderCollectionTabs();
+                updateFormCollectionSelect();
+
+                const results = await Promise.all(
+                    availableCollections.map(async col => {
+                        const records = await pb.collection(col).getFullList({ sort: '-created' });
+                        return records.map(r => normalizeRecord(r, col));
+                    })
+                );
+                items = results.flat();
+                isPocketBaseConnected = true;
+
+                setConnectionStatus('connected', `PocketBase Connected (${availableCollections.length} collection${availableCollections.length !== 1 ? 's' : ''})`);
+            } catch (err) {
+                if (isAuthError(err)) {
+                    handleAuthFailure();
+                    return;
+                }
+
+                console.warn('PocketBase data load failed:', err);
+                isPocketBaseConnected = false;
+                items = [];
+                availableCollections = [];
+                renderCollectionTabs();
+                updateFormCollectionSelect();
+                setConnectionStatus('error', 'PocketBase unavailable');
+            }
+
+            renderTagFilterChips();
+            // Handle router view setup
+            handleRouting();
+        }
+
+        function renderCollectionTabs() {
+            document.getElementById('collectionTabs').innerHTML = availableCollections.map(col => {
+                const label = col.charAt(0).toUpperCase() + col.slice(1);
+                return `<button onclick="setTypeFilter('${col}')" data-type="${col}" class="type-tab text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all">${label}</button>`;
+            }).join('');
+        }
+
+        function updateFormCollectionSelect() {
+            document.getElementById('formCollection').innerHTML = availableCollections.map(col =>
+                `<option value="${escapeHtml(col)}" class="bg-slate-900">${col.charAt(0).toUpperCase() + col.slice(1)}</option>`
+            ).join('');
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const sortOrder = document.getElementById('sortOrder').value;
+
+            let filtered = items.filter(item => {
+                if (activeTypeFilter !== 'all' && item.collectionName !== activeTypeFilter) return false;
+
+                if (searchQuery) {
+                    const matchName = (item.name || '').toLowerCase().includes(searchQuery);
+                    const matchDesc = (item.description || '').toLowerCase().includes(searchQuery);
+                    const matchLoc  = (item.location || '').toLowerCase().includes(searchQuery);
+                    if (!matchName && !matchDesc && !matchLoc) return false;
+                }
+
+                if (selectedTags.size > 0) {
+                    const itemTags = (item.tags || []).map(t => t.toLowerCase());
+                    for (const tag of selectedTags) {
+                        if (!itemTags.includes(tag.toLowerCase())) return false;
+                    }
+                }
+
+                return true;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortOrder === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+                return new Date(b.created || 0) - new Date(a.created || 0);
+            });
+
+            document.getElementById('itemCount').textContent = filtered.length;
+            renderCards(filtered);
+        }
+
+        function renderTagFilterChips() {
+            const tagContainer = document.getElementById('tagChips');
+            
+            // Extract all unique tags
+            const allTags = new Set();
+            items.forEach(i => (i.tags || []).forEach(t => allTags.add(t.trim())));
+
+            if (allTags.size === 0) {
+                tagContainer.innerHTML = '<span class="text-xs text-slate-600 italic">No tags</span>';
+                return;
+            }
+
+            tagContainer.innerHTML = Array.from(allTags).map(tag => {
+                const isSelected = selectedTags.has(tag);
+                return `
+                    <button onclick="toggleTagFilter('${tag}')" 
+                        class="text-xs px-2.5 py-1 rounded-lg border transition-all ${
+                            isSelected 
+                                ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 font-semibold' 
+                                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+                        }">
+                        #${tag}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function toggleTagFilter(tag) {
+            if (selectedTags.has(tag)) {
+                selectedTags.delete(tag);
+            } else {
+                selectedTags.add(tag);
+            }
+            renderTagFilterChips();
+            applyFilters();
+        }
+
+        function setTypeFilter(type) {
+            activeTypeFilter = type;
+            document.querySelectorAll('.type-tab').forEach(tab => {
+                if (tab.dataset.type === type) {
+                    tab.className = "type-tab active bg-sky-500 text-white px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all shadow-md shadow-sky-500/20";
+                } else {
+                    tab.className = "type-tab text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all";
+                }
+            });
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortOrder').value = 'newest';
+            selectedTags.clear();
+            setTypeFilter('all');
+            renderTagFilterChips();
+            applyFilters();
+        }
+
+        function renderCards(itemList) {
+            const grid = document.getElementById('cardsGrid');
+            const empty = document.getElementById('emptyState');
+
+            if (itemList.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = itemList.map(item => `
+                <a href="/item/${item.id}" onclick="handleCardClick(event, '${item.id}')" id="card-${item.id}" class="bg-slate-950 border border-slate-800/80 hover:border-slate-705 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 shadow-lg group focus:outline-none focus:ring-2 focus:ring-sky-500/50">
+                    <div>
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">${escapeHtml(item.collectionName || '')}</span>
+                                <h3 class="font-bold text-white text-base group-hover:text-sky-400 transition-colors">${escapeHtml(item.name)}</h3>
+                                ${item.location ? `<p class="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-location-dot text-[10px]"></i> ${escapeHtml(item.location)}</p>` : ''}
+                            </div>
+                            <div class="ml-2 mt-0.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                <button onclick="event.stopPropagation(); event.preventDefault(); editItem('${item.id}')" class="text-slate-500 hover:text-sky-400 p-1 rounded-lg hover:bg-slate-800" title="Edit">
+                                    <i class="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); event.preventDefault(); deleteItem('${item.id}', '${item.collectionName}')" class="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-slate-800" title="Delete">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${item.description ? `<p class="text-xs text-slate-300 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 leading-relaxed">${escapeHtml(item.description.replace(/<[^>]*>/g, '').substring(0, 150))}${item.description.replace(/<[^>]*>/g, '').length > 150 ? '...' : ''}</p>` : ''}
+                    </div>
+                    <div class="pt-3 border-t border-slate-900 flex flex-wrap gap-1.5 mt-2">
+                        ${(item.tags || []).map(t => `<span class="text-[11px] bg-slate-900 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-md font-medium">#${escapeHtml(t)}</span>`).join('')}
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        // ── Router & Navigation ──────────────────────────────────────────
+        
+        function handleCardClick(e, itemId) {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+            e.preventDefault();
+            navigateTo(`/item/${itemId}`, `card-${itemId}`);
+        }
+
+        function handleBackClick(e) {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+            e.preventDefault();
+            
+            const match = window.location.pathname.match(/^\/item\/([a-zA-Z0-9_-]+)$/);
+            const targetCardId = match ? `card-${match[1]}` : null;
+            
+            navigateTo('/', targetCardId);
+        }
+
+        function navigateTo(path, targetCardId = null) {
+            if (window.location.pathname === path) return;
+
+            if (document.startViewTransition) {
+                let cardEl = null;
+                if (targetCardId) {
+                    cardEl = document.getElementById(targetCardId);
+                    if (cardEl) cardEl.style.viewTransitionName = 'selected-card';
+                }
+                
+                const detailCard = document.querySelector('#detailView > div > div');
+                if (detailCard && path === '/') {
+                    detailCard.style.viewTransitionName = 'selected-card';
+                }
+
+                const transition = document.startViewTransition(() => {
+                    history.pushState(null, '', path);
+                    handleRouting();
+                });
+
+                transition.finished.finally(() => {
+                    if (cardEl) cardEl.style.viewTransitionName = '';
+                    if (detailCard) detailCard.style.viewTransitionName = '';
+                    
+                    if (path === '/') {
+                        if (targetCardId) {
+                            document.getElementById(targetCardId)?.focus();
+                        } else {
+                            document.getElementById('searchInput')?.focus();
+                        }
+                    } else {
+                        document.getElementById('detailHeading')?.focus();
+                    }
+                });
+            } else {
+                history.pushState(null, '', path);
+                handleRouting();
+                if (path === '/') {
+                    if (targetCardId) {
+                        document.getElementById(targetCardId)?.focus();
+                    } else {
+                        document.getElementById('searchInput')?.focus();
+                    }
+                } else {
+                    document.getElementById('detailHeading')?.focus();
+                }
+            }
+        }
+
+        function handleRouting() {
+            const path = window.location.pathname;
+            const itemMatch = path.match(/^\/item\/([a-zA-Z0-9_-]+)$/);
+
+            if (itemMatch) {
+                const itemId = itemMatch[1];
+                
+                document.getElementById('listView').classList.add('hidden');
+                document.getElementById('detailView').classList.remove('hidden');
+
+                if (items.length === 0) {
+                    document.getElementById('detailLoader').classList.remove('hidden');
+                    document.getElementById('detailContent').classList.add('hidden');
+                    document.getElementById('detailNotFound').classList.add('hidden');
+                    return;
+                }
+
+                const item = items.find(i => i.id === itemId);
+                if (item) {
+                    renderDetailView(item);
+                } else {
+                    document.getElementById('detailLoader').classList.add('hidden');
+                    document.getElementById('detailContent').classList.add('hidden');
+                    document.getElementById('detailNotFound').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('detailView').classList.add('hidden');
+                document.getElementById('listView').classList.remove('hidden');
+                applyFilters();
+            }
+        }
+
+        function renderDetailView(item) {
+            document.getElementById('detailLoader').classList.add('hidden');
+            document.getElementById('detailNotFound').classList.add('hidden');
+            document.getElementById('detailContent').classList.remove('hidden');
+
+            const label = item.collectionName.charAt(0).toUpperCase() + item.collectionName.slice(1);
+            document.getElementById('detailCollection').textContent = label;
+            document.getElementById('detailHeading').textContent = item.name;
+
+            const locContainer = document.getElementById('detailLocationContainer');
+            if (item.location) {
+                document.getElementById('detailLocation').innerHTML = `<a href="https://maps.google.com/?q=${encodeURIComponent(item.location)}" target="_blank" class="hover:underline flex items-center gap-1">${escapeHtml(item.location)} <i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-sky-400"></i></a>`;
+                locContainer.classList.remove('hidden');
+            } else {
+                locContainer.classList.add('hidden');
+            }
+
+            const descEl = document.getElementById('detailDescription');
+            if (item.description) {
+                if (item.description.includes('<') && item.description.includes('>')) {
+                    descEl.innerHTML = item.description;
+                } else {
+                    descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+                }
+            } else {
+                descEl.innerHTML = '<span class="text-slate-500 italic">No description provided.</span>';
+            }
+
+            const tagsEl = document.getElementById('detailTags');
+            if (item.tags && item.tags.length > 0) {
+                tagsEl.innerHTML = item.tags.map(t => 
+                    `<button onclick="viewTagFromDetail('${escapeHtml(t)}')" class="text-xs px-2.5 py-1 rounded-lg border bg-slate-900 text-slate-400 border-slate-800 hover:border-sky-500 hover:text-sky-400 transition-all">#${escapeHtml(t)}</button>`
+                ).join('');
+            } else {
+                tagsEl.innerHTML = '<span class="text-xs text-slate-600 italic">No tags</span>';
+            }
+
+            const formatDate = (dStr) => {
+                if (!dStr) return '-';
+                const date = new Date(dStr);
+                return date.toLocaleDateString(undefined, { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
+            document.getElementById('detailCreated').textContent = formatDate(item.created);
+            document.getElementById('detailUpdated').textContent = formatDate(item.updated);
+
+            document.getElementById('detailEditBtn').onclick = () => editItem(item.id);
+            document.getElementById('detailDeleteBtn').onclick = () => deleteItem(item.id, item.collectionName);
+        }
+
+        function viewTagFromDetail(tag) {
+            resetFilters();
+            selectedTags.add(tag);
+            renderTagFilterChips();
+            navigateTo('/');
+        }
+
+        async function deleteItem(id, collectionName) {
+            if (!confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
+
+            if (!isPocketBaseConnected) {
+                showToast("PocketBase is unavailable.", "warning");
+                return;
+            }
+
+            try {
+                await pb.collection(collectionName).delete(id);
+                items = items.filter(i => i.id !== id);
+                navigateTo('/');
+                showToast("Deleted entry!", "success");
+            } catch (err) {
+                if (isAuthError(err)) {
+                    handleAuthFailure();
+                    return;
+                }
+
+                showToast(getErrorMessage(err, "Error deleting item."), "warning");
+            }
+        }
+
+        // ── Form Submissions & Modals ──────────────────────────────────────
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const collection = editingItem ? editingItem.collectionName : document.getElementById('formCollection').value;
+            const payload = {
+                Title:       document.getElementById('formName').value,
+                title:       document.getElementById('formName').value,
+                description: document.getElementById('formDescription').value,
+                location:    document.getElementById('formLocation').value,
+                tags:        [...formSelectedTags]
+            };
+
+            if (!isPocketBaseConnected) {
+                showToast("PocketBase is unavailable.", "warning");
+                return;
+            }
+
+            if (editingItem) {
+                try {
+                    const saved = await pb.collection(collection).update(editingItem.id, payload);
+                    const idx = items.findIndex(i => i.id === editingItem.id);
+                    if (idx !== -1) {
+                        items[idx] = normalizeRecord(saved, collection);
+                        if (window.location.pathname === `/item/${editingItem.id}`) {
+                            renderDetailView(items[idx]);
+                        }
+                    }
+                    showToast("Updated!", "success");
+                } catch (err) {
+                    if (isAuthError(err)) {
+                        handleAuthFailure();
+                        return;
+                    }
+
+                    showToast(getErrorMessage(err, "Unable to update item."), "warning");
+                }
+            } else {
+                try {
+                    const savedRecord = await pb.collection(collection).create(payload);
+                    items.unshift(normalizeRecord(savedRecord, collection));
+                    showToast("Saved to PocketBase!", "success");
+                } catch (err) {
+                    if (isAuthError(err)) {
+                        handleAuthFailure();
+                        return;
+                    }
+
+                    showToast(getErrorMessage(err, "Unable to save item."), "warning");
+                }
+            }
+
+            if (isPocketBaseConnected) {
+                closeAddModal();
+                renderTagFilterChips();
+                applyFilters();
+                document.getElementById('addContentForm').reset();
+                clearFormTags();
+            }
+        }
+
+        // Modal Controls
+        function editItem(id) {
+            const item = items.find(i => i.id === id);
+            if (item) openAddModal(item);
+        }
+
+        function openAddModal(item = null) {
+            editingItem = item;
+            document.querySelector('#addModal h3').textContent = item ? 'Edit Entry' : 'Add Entry';
+
+            if (item) {
+                const sel = document.getElementById('formCollection');
+                sel.value = item.collectionName;
+                sel.disabled = true;
+                document.getElementById('formName').value        = item.name || '';
+                document.getElementById('formDescription').value = item.description || '';
+                document.getElementById('formLocation').value    = item.location || '';
+                formSelectedTags = new Set(item.tags || []);
+                renderFormTagChips();
+            } else {
+                document.getElementById('formCollection').disabled = false;
+                document.getElementById('addContentForm').reset();
+                clearFormTags();
+            }
+
+            const modal = document.getElementById('addModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.children[0].classList.remove('scale-95');
+            modal.children[0].classList.add('scale-100');
+        }
+
+        function closeAddModal() {
+            editingItem = null;
+            document.getElementById('formCollection').disabled = false;
+            const modal = document.getElementById('addModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.children[0].classList.remove('scale-100');
+            modal.children[0].classList.add('scale-95');
+        }
+
+        // Helper Utilities
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, match => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[match]));
+        }
+
+        function getErrorMessage(err, fallback) {
+            return err?.response?.message || err?.message || fallback;
+        }
+
+        function isAuthError(err) {
+            return err?.status === 401 || err?.status === 403 || err?.response?.status === 401 || err?.response?.status === 403;
+        }
+
+        function showToast(message, type = "info") {
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-500 text-white',
+                warning: 'bg-amber-500 text-slate-950',
+                info: 'bg-sky-500 text-white'
+            };
+            toast.className = `${colors[type]} px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg transition-all transform translate-y-2 opacity-0 flex items-center space-x-2`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${message}</span>`;
+            
+            document.getElementById('toastContainer').appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 200);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
