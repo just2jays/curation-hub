@@ -105,6 +105,7 @@
                         </div>
 
                         <div class="text-sm text-slate-400 space-y-2">
+                            <p>On a brand new PocketBase database, the normal <span class="text-sky-300 font-semibold">/_/</span> login page may still appear. Use the one-time installer URL from the PocketBase logs to create the first superuser.</p>
                             <p>Frontend access comes from records in a PocketBase auth collection named <span class="text-sky-300 font-semibold">users</span>.</p>
                             <p>Your first content collection can have any name. The current UI works best when records include a title field named <span class="text-sky-300 font-semibold">title</span> or <span class="text-sky-300 font-semibold">Title</span>.</p>
                             <p>Optional fields already supported by the UI are <span class="text-sky-300 font-semibold">description</span>, <span class="text-sky-300 font-semibold">location</span>, and <span class="text-sky-300 font-semibold">tags</span>.</p>
@@ -581,7 +582,7 @@
         function getSetupSteps() {
             let steps = [
                 'Open the PocketBase dashboard.',
-                'Create the first PocketBase superuser if this is a brand new instance.',
+                'If this is a brand new instance, create the first PocketBase superuser using the one-time installer URL from docker compose logs pocketbase or by running /pb/pocketbase superuser upsert EMAIL PASS inside the container.',
             ];
 
             if (!bootstrapState.hasUsersAuthCollection) {
