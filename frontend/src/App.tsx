@@ -13,6 +13,7 @@ function App() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [editing, setEditing] = useState<RecordItem>()
   const [error, setError] = useState('')
+  const [bootstrapFailed, setBootstrapFailed] = useState(false)
   const [loading, setLoading] = useState(true)
 
   async function refresh() {
@@ -20,6 +21,7 @@ function App() {
     try {
       const next = await getBootstrapState()
       setBootstrap(next)
+      setBootstrapFailed(false)
       if (pb.authStore.isValid && next.hasUsersAuthCollection && next.collections.length) {
         const loaded = (await Promise.all(next.collections.map(async (collection) => {
           const data = await pb.collection(collection).getFullList({ sort: '-created' })
@@ -30,6 +32,7 @@ function App() {
       }
     } catch (err) {
       if (isAuthError(err)) pb.authStore.clear()
+      setBootstrapFailed(true)
       setError(err instanceof Error ? err.message : 'PocketBase unavailable.')
     } finally { setLoading(false) }
   }
@@ -37,6 +40,7 @@ function App() {
   useEffect(() => { void refresh() }, [])
 
   if (loading && !bootstrap.collections.length) return <main className="center-stage"><div className="loading-mark">Loading workspace...</div></main>
+  if (bootstrapFailed) return <main className="center-stage"><section className="setup-panel"><p className="eyebrow">CURATOR HUB / CONNECTION</p><h1>We could not read the workspace.</h1><p className="muted">PocketBase is running, but the public collection status endpoint did not return valid metadata.</p><p className="error-text">{error}</p><button className="primary-button" onClick={() => void refresh()}>Retry connection</button></section></main>
   if (!bootstrap.hasUsersAuthCollection || !bootstrap.collections.length) return <SetupScreen state={bootstrap} onRefresh={() => void refresh()} />
   if (!pb.authStore.isValid) return <AuthScreen onSignedIn={() => void refresh()} />
 

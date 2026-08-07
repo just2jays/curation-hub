@@ -12,13 +12,17 @@ routerAdd("GET", "/api/app/collections", (e) => {
         all
             .filter(c => !c.system && c.type === "base")
             .forEach(c => {
-                fields[c.name] = c.fields.fieldNames().map(name => {
-                    const field = c.fields.getByName(name);
-                    const fieldType = typeof field.type === "function" ? field.type() : field.type;
-                    return {
-                        name,
-                        selectOptions: fieldType === "select" ? field.values : [],
-                    };
+                fields[c.name] = c.fields.fieldNames().map(name => ({ name, selectOptions: [] }));
+
+                c.fields.fieldNames().forEach((name, index) => {
+                    try {
+                        const field = c.fields.getByName(name);
+                        const fieldType = typeof field.type === "function" ? field.type() : field.type;
+                        const options = fieldType === "select" && Array.isArray(field.values) ? field.values : [];
+                        fields[c.name][index].selectOptions = options;
+                    } catch (err) {
+                        console.log(`Field metadata unavailable for ${c.name}.${name}: ${err}`);
+                    }
                 });
             });
 
