@@ -66,4 +66,14 @@ input:focus,textarea:focus,select:focus { border-color:var(--teal); box-shadow:0
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .modal-backdrop { position:fixed; inset:0; z-index:10; display:grid; place-items:center; padding:20px; overflow:auto; background:#17202680; }
 .loading-mark { color:var(--teal); font-weight:700; }
+/* Tag input autocomplete */
+.tag-input-wrapper { position:relative; border:1px solid var(--line); border-radius:8px; background:#fff; cursor:text; padding:6px 8px; min-height:40px; }
+.tag-input-chips { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+.tag-chip { display:inline-flex; align-items:center; gap:3px; border:1px solid var(--line); border-radius:999px; padding:3px 8px; font-size:.75rem; color:var(--muted); background:#f5faf9; white-space:nowrap; }
+.tag-chip-remove { background:none; border:none; cursor:pointer; color:var(--muted); font-size:.9rem; line-height:1; padding:0 1px; }
+.tag-chip-remove:hover { color:var(--accent); }
+.tag-input-field { border:none; outline:none; font-size:.85rem; min-width:80px; flex:1; background:transparent; padding:2px 2px; }
+.tag-suggestions { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:20; background:#fff; border:1px solid var(--line); border-radius:8px; box-shadow:0 4px 14px #1720260f; list-style:none; margin:0; padding:4px 0; max-height:180px; overflow:auto; }
+.tag-suggestion-item { display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; padding:7px 12px; font-size:.82rem; color:var(--muted); }
+.tag-suggestion-item:hover { background:#f0f8f6; color:var(--teal); }
 @media (max-width:700px) { .topbar,.toolbar,.section-heading,.tag-panel { align-items:flex-start; flex-direction:column; } .topbar-actions { width:100%; justify-content:flex-start; } .search-input { max-width:none; } .tag-options { justify-content:flex-start; } .form-grid,.status-grid { grid-template-columns:1fr; } .auth-panel,.setup-panel,.record-form { padding:24px; } }
