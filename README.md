@@ -56,7 +56,7 @@ npm run dev
 
 Open `http://localhost:5173`. Vite hot-reloads React and TypeScript changes, while `/api` and `/_/` requests are proxied through `http://localhost:3001` to PocketBase. You can still use `http://localhost:3001` to check the production-style Docker build.
 
-PocketBase hooks are mounted from `pb_hooks/` and reload while the container is running. Collection changes made in the PocketBase dashboard are immediately available through the API. Stop the services when finished with:
+PocketBase hooks are baked into the PocketBase image and update on rebuild. Collection changes made in the PocketBase dashboard are immediately available through the API. Stop the services when finished with:
 
 ```sh
 docker compose down

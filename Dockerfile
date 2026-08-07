@@ -12,6 +12,8 @@ RUN unzip /tmp/pb.zip -d /pb/
 
 RUN mkdir -p /pb/pb_migrations /pb/pb_hooks /pb/pb_data /pb/pb_public
 
+COPY pb_hooks/ /pb/pb_hooks/
+
 COPY pocketbase-entrypoint.sh /usr/local/bin/pocketbase-entrypoint.sh
 RUN chmod +x /usr/local/bin/pocketbase-entrypoint.sh
 
