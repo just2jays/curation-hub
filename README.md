@@ -34,13 +34,35 @@ docker-compose up -d --build
 
 5. Visit `http://localhost:3001`.
 
-The frontend is built with React, TypeScript, and Vite during the Docker image build. Local frontend development is available with:
+The frontend is built with React, TypeScript, and Vite during the Docker image build.
+
+## Local frontend development
+
+For hot reloading while working on React code, use two terminals.
+
+Terminal 1, start PocketBase and the nginx API proxy:
 
 ```sh
-cd frontend-react
+docker compose up -d
+```
+
+Terminal 2, start Vite from the frontend project:
+
+```sh
+cd frontend
 npm install
 npm run dev
 ```
+
+Open `http://localhost:5173`. Vite hot-reloads React and TypeScript changes, while `/api` and `/_/` requests are proxied through `http://localhost:3001` to PocketBase. You can still use `http://localhost:3001` to check the production-style Docker build.
+
+PocketBase hooks are mounted from `pb_hooks/` and reload while the container is running. Collection changes made in the PocketBase dashboard are immediately available through the API. Stop the services when finished with:
+
+```sh
+docker compose down
+```
+
+The production container still uses nginx because PocketBase is intentionally private inside the Docker network; nginx is the single public origin for both the compiled SPA and PocketBase API/dashboard. Its configuration is baked into the image, so Coolify does not need to bind-mount `nginx.conf`.
 
 ## First-run behavior
 
