@@ -23,6 +23,12 @@ h3 { font-size:1.35rem; margin-top:14px; }
 .primary-button:hover { transform:translateY(-2px); background:#ca4429; }
 .secondary-button { color:var(--ink); background:#ffffff9c; border:1px solid var(--line); }
 .toolbar { border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding-top:14px; padding-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:18px; }
+.tag-panel { max-width:1124px; margin:18px auto 0; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:18px; border:1px solid var(--line); border-radius:12px; background:#fffdf899; }
+.tag-panel-help { color:var(--muted); font-size:.82rem; }
+.tag-options { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:7px; }
+.tag-filter,.clear-tags { border:1px solid var(--line); border-radius:999px; padding:7px 10px; color:var(--muted); background:transparent; font-size:.76rem; }
+.tag-filter:hover,.tag-filter.active { color:#fff; border-color:var(--teal); background:var(--teal); }
+.clear-tags { color:var(--accent); border-color:#e4a89a; }
 .collection-tabs { display:flex; gap:7px; overflow:auto; }
 .tab { white-space:nowrap; border:0; border-radius:8px; padding:9px 12px; color:var(--muted); background:transparent; }
 .tab.active,.tab:hover { color:#fff; background:var(--teal); }
@@ -60,4 +66,4 @@ input:focus,textarea:focus,select:focus { border-color:var(--teal); box-shadow:0
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .modal-backdrop { position:fixed; inset:0; z-index:10; display:grid; place-items:center; padding:20px; overflow:auto; background:#17202680; }
 .loading-mark { color:var(--teal); font-weight:700; }
-@media (max-width:700px) { .topbar,.toolbar,.section-heading { align-items:flex-start; flex-direction:column; } .topbar-actions { width:100%; justify-content:flex-start; } .search-input { max-width:none; } .form-grid,.status-grid { grid-template-columns:1fr; } .auth-panel,.setup-panel,.record-form { padding:24px; } }
+@media (max-width:700px) { .topbar,.toolbar,.section-heading,.tag-panel { align-items:flex-start; flex-direction:column; } .topbar-actions { width:100%; justify-content:flex-start; } .search-input { max-width:none; } .tag-options { justify-content:flex-start; } .form-grid,.status-grid { grid-template-columns:1fr; } .auth-panel,.setup-panel,.record-form { padding:24px; } }
