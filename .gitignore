@@ -8,6 +8,7 @@
 pb_data/*.db
 pb_data/*.db-*
 pb_data/.notify/
+pb_data/installer-url
 
 pb_public/*
 !pb_public/.gitkeep

@@ -12,7 +12,10 @@ RUN unzip /tmp/pb.zip -d /pb/
 
 RUN mkdir -p /pb/pb_migrations /pb/pb_hooks /pb/pb_data /pb/pb_public
 
+COPY pocketbase-entrypoint.sh /usr/local/bin/pocketbase-entrypoint.sh
+RUN chmod +x /usr/local/bin/pocketbase-entrypoint.sh
+
 EXPOSE 8080
 
 # start PocketBase
-CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
+CMD ["/usr/local/bin/pocketbase-entrypoint.sh"]

@@ -105,14 +105,14 @@
                         </div>
 
                         <div class="text-sm text-slate-400 space-y-2">
-                            <p>On a brand new PocketBase database, the normal <span class="text-sky-300 font-semibold">/_/</span> login page may still appear. Use the one-time installer URL from the PocketBase logs to create the first superuser.</p>
+                            <p>On a brand new PocketBase database, use the setup button to open PocketBase's one-time installer and create the first superuser. The regular <span class="text-sky-300 font-semibold">/_/</span> dashboard is available after that.</p>
                             <p>Frontend access comes from records in a PocketBase auth collection named <span class="text-sky-300 font-semibold">users</span>.</p>
-                            <p>Your first content collection can have any name. The current UI works best when records include a title field named <span class="text-sky-300 font-semibold">title</span> or <span class="text-sky-300 font-semibold">Title</span>.</p>
-                            <p>Optional fields already supported by the UI are <span class="text-sky-300 font-semibold">description</span>, <span class="text-sky-300 font-semibold">location</span>, and <span class="text-sky-300 font-semibold">tags</span>.</p>
+                            <p>Your first content collection can have any name. The current UI supports <span class="text-sky-300 font-semibold">Name</span> or <span class="text-sky-300 font-semibold">Title</span> for the primary label.</p>
+                            <p>Supported fields include <span class="text-sky-300 font-semibold">Notes</span> or <span class="text-sky-300 font-semibold">description</span>, <span class="text-sky-300 font-semibold">Pros</span>, <span class="text-sky-300 font-semibold">Cons</span>, <span class="text-sky-300 font-semibold">Location</span>, <span class="text-sky-300 font-semibold">Season</span>, and JSON <span class="text-sky-300 font-semibold">Tags</span>. Pros and Cons may be JSON values.</p>
                         </div>
 
                         <div class="flex flex-col sm:flex-row gap-3 pt-2">
-                            <a href="/_/" class="inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all shadow-lg shadow-sky-500/20">
+                            <a id="pocketbaseSetupLink" href="/_/" onclick="openPocketBaseSetup(event)" class="inline-flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-400 text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all shadow-lg shadow-sky-500/20">
                                 <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
                                 <span>Open PocketBase Dashboard</span>
                             </a>
@@ -337,15 +337,29 @@
                                     <i class="fa-solid fa-location-dot text-sky-405"></i>
                                     <span id="detailLocation">Location</span>
                                 </div>
+                                <div id="detailSeasonContainer" class="flex items-center gap-2 text-slate-400 mt-2 text-sm hidden">
+                                    <i class="fa-solid fa-calendar-days text-sky-405"></i>
+                                    <span id="detailSeason"></span>
+                                </div>
                             </div>
 
                             <div class="border-t border-slate-800 my-6"></div>
 
                             <div>
-                                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Description</h2>
+                                <h2 id="detailDescriptionLabel" class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Notes</h2>
                                 <div id="detailDescription" class="text-slate-200 text-sm md:text-base leading-relaxed bg-slate-900/40 p-4 md:p-6 rounded-2xl border border-slate-800 min-h-[120px] prose prose-invert">
-                                    No description provided.
+                                    No notes provided.
                                 </div>
+                            </div>
+
+                            <div id="detailProsSection" class="hidden">
+                                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Pros</h2>
+                                <div id="detailPros" class="text-slate-200 text-sm leading-relaxed bg-slate-900/40 p-4 rounded-2xl border border-slate-800"></div>
+                            </div>
+
+                            <div id="detailConsSection" class="hidden">
+                                <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cons</h2>
+                                <div id="detailCons" class="text-slate-200 text-sm leading-relaxed bg-slate-900/40 p-4 rounded-2xl border border-slate-800"></div>
                             </div>
 
                             <div>
@@ -403,24 +417,39 @@
             <form id="addContentForm" onsubmit="handleFormSubmit(event)" class="mt-4 space-y-4">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Collection *</label>
-                    <select id="formCollection" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                    <select id="formCollection" onchange="updateFormFieldControls()" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
                         <!-- populated dynamically -->
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Title *</label>
+                    <label id="formNameLabel" class="block text-xs text-slate-400 mb-1">Name *</label>
                     <input type="text" id="formName" required placeholder="e.g. The Rustic Oak" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
                 </div>
 
                 <div>
-                    <label class="block text-xs text-slate-400 mb-1">Description</label>
+                    <label id="formDescriptionLabel" class="block text-xs text-slate-400 mb-1">Notes</label>
                     <textarea id="formDescription" rows="2" placeholder="Notes, impressions..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Pros</label>
+                    <textarea id="formPros" rows="2" placeholder="One item per line or valid JSON" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Cons</label>
+                    <textarea id="formCons" rows="2" placeholder="One item per line or valid JSON" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500"></textarea>
                 </div>
 
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Location</label>
                     <input type="text" id="formLocation" placeholder="e.g. 123 Main St, Downtown" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <div id="formSeasonField" class="hidden">
+                    <label class="block text-xs text-slate-400 mb-1">Season</label>
+                    <select id="formSeason" multiple size="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500"></select>
                 </div>
 
                 <div class="relative">
@@ -459,6 +488,7 @@
         let hasLoadedItems = false;
         let bootstrapState = {
             collections: [],
+            fields: {},
             hasUsersAuthCollection: false,
         };
 
@@ -470,12 +500,16 @@
             input.addEventListener('input', () => {
                 const val = input.value.trim();
                 if (!val) { suggestions.classList.add('hidden'); return; }
-                const allTags = [...new Set(items.flatMap(i => i.tags || []))];
+                const configuredTags = getConfiguredTagOptions();
+                const allTags = [...new Set([
+                    ...configuredTags,
+                    ...items.flatMap(i => i.tags || [])
+                ])];
                 const matches = allTags.filter(t =>
                     t.toLowerCase().includes(val.toLowerCase()) && !formSelectedTags.has(t)
                 );
                 // also offer the typed value itself if not already present
-                if (!allTags.some(t => t.toLowerCase() === val.toLowerCase()) && !formSelectedTags.has(val)) {
+                if (!configuredTags.length && !allTags.some(t => t.toLowerCase() === val.toLowerCase()) && !formSelectedTags.has(val)) {
                     matches.unshift(val);
                 }
                 if (!matches.length) { suggestions.classList.add('hidden'); return; }
@@ -516,8 +550,30 @@
         function addFormTag(tag) {
             const clean = tag.replace(/,/g, '').trim();
             if (!clean || formSelectedTags.has(clean)) return;
+            const configuredTags = getConfiguredTagOptions();
+            if (configuredTags.length && !configuredTags.some(option => option.toLowerCase() === clean.toLowerCase())) return;
             formSelectedTags.add(clean);
             renderFormTagChips();
+        }
+
+        function getConfiguredTagOptions() {
+            return getFieldMetadata('Tags')?.selectOptions || [];
+        }
+
+        function getFieldMetadata(name, collection = document.getElementById('formCollection').value) {
+            const fields = bootstrapState.fields[collection] || [];
+            return fields.find(field => {
+                const fieldName = typeof field === 'string' ? field : field.name;
+                return fieldName?.toLowerCase() === name.toLowerCase();
+            });
+        }
+
+        function updateFormFieldControls() {
+            const seasonField = document.getElementById('formSeasonField');
+            const seasonInput = document.getElementById('formSeason');
+            const options = getFieldMetadata('Season')?.selectOptions || [];
+            seasonInput.innerHTML = options.map(option => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join('');
+            seasonField.classList.toggle('hidden', options.length === 0);
         }
 
         function removeFormTag(tag) {
@@ -548,9 +604,41 @@
         const pb = new PocketBase(window.location.origin);
 
         function normalizeRecord(r, collectionName) {
-            const raw = r.tags;
-            const tags = Array.isArray(raw) ? raw : (raw ? (() => { try { return JSON.parse(raw); } catch { return []; } })() : []);
-            return { ...r, collectionName, name: r.Title || r.title || '', tags };
+            const readField = (...names) => {
+                const fieldName = Object.keys(r).find(key => names.some(name => key.toLowerCase() === name.toLowerCase()));
+                return fieldName ? r[fieldName] : '';
+            };
+            const parseValue = value => {
+                if (Array.isArray(value)) return value;
+                if (!value) return [];
+                try {
+                    const parsed = JSON.parse(value);
+                    return Array.isArray(parsed) ? parsed : [parsed];
+                } catch {
+                    return String(value).split(/\r?\n|,/).map(part => part.trim()).filter(Boolean);
+                }
+            };
+            const fieldNames = Object.keys(r);
+            const findFieldName = (...names) => fieldNames.find(fieldName => names.some(name => fieldName.toLowerCase() === name.toLowerCase()));
+            return {
+                ...r,
+                collectionName,
+                _fieldNames: {
+                    name: findFieldName('Name', 'Title', 'title'),
+                    description: findFieldName('Notes', 'Description', 'description'),
+                    location: findFieldName('Location', 'location'),
+                    tags: findFieldName('Tags', 'tags'),
+                    pros: findFieldName('Pros', 'pros'),
+                    cons: findFieldName('Cons', 'cons'),
+                },
+                name: readField('Name', 'Title', 'title'),
+                description: readField('Notes', 'Description', 'description'),
+                location: readField('Location', 'location'),
+                tags: parseValue(readField('Tags', 'tags')),
+                season: parseValue(readField('Season', 'season')),
+                pros: readField('Pros', 'pros'),
+                cons: readField('Cons', 'cons'),
+            };
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -582,7 +670,7 @@
         function getSetupSteps() {
             let steps = [
                 'Open the PocketBase dashboard.',
-                'If this is a brand new instance, create the first PocketBase superuser using the one-time installer URL from docker compose logs pocketbase or by running /pb/pocketbase superuser upsert EMAIL PASS inside the container.',
+                'If this is a brand new instance, use the setup button to create the first PocketBase superuser. The installer URL is also available in docker compose logs pocketbase.',
             ];
 
             if (!bootstrapState.hasUsersAuthCollection) {
@@ -600,10 +688,29 @@
 
             steps = steps.concat([
                 'Set the collection API rules so authenticated users can list, view, create, update, and delete records.',
-                'Recommended fields for the current UI are title or Title, plus optional description, location, and tags.',
+                'Recommended fields for the current UI are Name or Title, plus Notes or description, Pros, Cons, Location, Season, and Tags.',
             ]);
 
             return steps;
+        }
+
+        async function openPocketBaseSetup(event) {
+            event.preventDefault();
+
+            try {
+                const res = await fetch('/api/app/installer');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.installerHash) {
+                        window.location.assign(`${window.location.origin}/_/${data.installerHash}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('PocketBase installer URL unavailable:', err);
+            }
+
+            window.location.assign('/_/');
         }
 
         function renderSetupState() {
@@ -679,11 +786,13 @@
                 const data = await res.json();
                 bootstrapState = {
                     collections: data.collections || [],
+                    fields: data.fields || {},
                     hasUsersAuthCollection: Boolean(data.hasUsersAuthCollection),
                 };
             } catch (err) {
                 bootstrapState = {
                     collections: [],
+                    fields: {},
                     hasUsersAuthCollection: false,
                 };
                 console.warn('PocketBase bootstrap load failed:', err);
@@ -1002,6 +1111,7 @@
                                 <span class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">${escapeHtml(item.collectionName || '')}</span>
                                 <h3 class="font-bold text-white text-base group-hover:text-sky-400 transition-colors">${escapeHtml(item.name)}</h3>
                                 ${item.location ? `<p class="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-location-dot text-[10px]"></i> ${escapeHtml(item.location)}</p>` : ''}
+                                ${item.season?.length ? `<p class="text-xs text-slate-400 flex items-center gap-1 mt-0.5"><i class="fa-solid fa-calendar-days text-[10px]"></i> ${escapeHtml(item.season.join(', '))}</p>` : ''}
                             </div>
                             <div class="ml-2 mt-0.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                 <button onclick="event.stopPropagation(); event.preventDefault(); editItem('${item.id}')" class="text-slate-500 hover:text-sky-400 p-1 rounded-lg hover:bg-slate-800" title="Edit">
@@ -1012,7 +1122,7 @@
                                 </button>
                             </div>
                         </div>
-                        ${item.description ? `<p class="text-xs text-slate-300 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 leading-relaxed">${escapeHtml(item.description.replace(/<[^>]*>/g, '').substring(0, 150))}${item.description.replace(/<[^>]*>/g, '').length > 150 ? '...' : ''}</p>` : ''}
+                        ${item.description ? `<p class="text-xs text-slate-300 mb-4 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800/50 leading-relaxed">${escapeHtml(String(item.description).replace(/<[^>]*>/g, '').substring(0, 150))}${String(item.description).replace(/<[^>]*>/g, '').length > 150 ? '...' : ''}</p>` : ''}
                     </div>
                     <div class="pt-3 border-t border-slate-900 flex flex-wrap gap-1.5 mt-2">
                         ${(item.tags || []).map(t => `<span class="text-[11px] bg-slate-900 text-slate-400 border border-slate-800 px-2.5 py-0.5 rounded-md font-medium">#${escapeHtml(t)}</span>`).join('')}
@@ -1137,16 +1247,28 @@
                 locContainer.classList.add('hidden');
             }
 
+            const seasonContainer = document.getElementById('detailSeasonContainer');
+            if (item.season?.length) {
+                document.getElementById('detailSeason').textContent = item.season.join(', ');
+                seasonContainer.classList.remove('hidden');
+            } else {
+                seasonContainer.classList.add('hidden');
+            }
+
             const descEl = document.getElementById('detailDescription');
+            document.getElementById('detailDescriptionLabel').textContent = item._fieldNames?.description === 'description' ? 'Description' : 'Notes';
             if (item.description) {
-                if (item.description.includes('<') && item.description.includes('>')) {
+                if (String(item.description).includes('<') && String(item.description).includes('>')) {
                     descEl.innerHTML = item.description;
                 } else {
-                    descEl.innerHTML = item.description.replace(/\n/g, '<br>');
+                    descEl.innerHTML = escapeHtml(String(item.description)).replace(/\n/g, '<br>');
                 }
             } else {
-                descEl.innerHTML = '<span class="text-slate-500 italic">No description provided.</span>';
+                descEl.innerHTML = '<span class="text-slate-500 italic">No notes provided.</span>';
             }
+
+            renderDetailJsonValue('detailProsSection', 'detailPros', item.pros);
+            renderDetailJsonValue('detailConsSection', 'detailCons', item.cons);
 
             const tagsEl = document.getElementById('detailTags');
             if (item.tags && item.tags.length > 0) {
@@ -1182,6 +1304,25 @@
             navigateTo('/');
         }
 
+        function renderDetailJsonValue(sectionId, valueId, value) {
+            const section = document.getElementById(sectionId);
+            const target = document.getElementById(valueId);
+            if (!value) {
+                section.classList.add('hidden');
+                return;
+            }
+
+            let displayValue = value;
+            try {
+                displayValue = JSON.parse(value);
+            } catch {
+                // Keep plain text values as-is.
+            }
+            const values = Array.isArray(displayValue) ? displayValue : [displayValue];
+            target.innerHTML = values.map(entry => `<div>${escapeHtml(typeof entry === 'object' ? JSON.stringify(entry) : String(entry)).replace(/\n/g, '<br>')}</div>`).join('');
+            section.classList.remove('hidden');
+        }
+
         async function deleteItem(id, collectionName) {
             if (!confirm("Are you sure you want to delete this item? This action cannot be undone.")) return;
 
@@ -1211,13 +1352,28 @@
             e.preventDefault();
 
             const collection = editingItem ? editingItem.collectionName : document.getElementById('formCollection').value;
-            const payload = {
-                Title:       document.getElementById('formName').value,
-                title:       document.getElementById('formName').value,
-                description: document.getElementById('formDescription').value,
-                location:    document.getElementById('formLocation').value,
-                tags:        [...formSelectedTags]
+            const fields = bootstrapState.fields[collection] || [];
+            const fieldNames = fields.map(field => typeof field === 'string' ? field : field.name);
+            const findField = (...names) => fieldNames.find(fieldName => names.some(name => fieldName.toLowerCase() === name.toLowerCase()));
+            const setField = (payload, names, value) => {
+                const fieldName = findField(...names);
+                if (fieldName && value !== undefined) payload[fieldName] = value;
             };
+            const parseJsonInput = value => {
+                if (!value.trim()) return undefined;
+                try { return JSON.parse(value); } catch { return value.split(/\r?\n/).map(line => line.trim()).filter(Boolean); }
+            };
+            const payload = {};
+            setField(payload, ['Name', 'Title', 'title'], document.getElementById('formName').value);
+            setField(payload, ['Notes', 'Description', 'description'], document.getElementById('formDescription').value);
+            setField(payload, ['Pros', 'pros'], parseJsonInput(document.getElementById('formPros').value));
+            setField(payload, ['Cons', 'cons'], parseJsonInput(document.getElementById('formCons').value));
+            setField(payload, ['Location', 'location'], document.getElementById('formLocation').value);
+            setField(payload, ['Season', 'season'], [...document.getElementById('formSeason').selectedOptions].map(option => option.value));
+            const tagsFieldName = findField('Tags', 'tags');
+            const tagsField = fields.find(field => (typeof field === 'string' ? field : field.name) === tagsFieldName);
+            const tagsValue = tagsField?.selectOptions?.length ? [...formSelectedTags][0] || '' : [...formSelectedTags];
+            setField(payload, ['Tags', 'tags'], tagsValue);
 
             if (!isPocketBaseConnected) {
                 showToast("PocketBase is unavailable.", "warning");
@@ -1254,7 +1410,7 @@
                         return;
                     }
 
-                    showToast(getErrorMessage(err, "Unable to save item."), "warning");
+                    showToast(getErrorMessage(err, "Unable to save item. Check the collection fields and API rules."), "warning");
                 }
             }
 
@@ -1283,12 +1439,19 @@
                 sel.disabled = true;
                 document.getElementById('formName').value        = item.name || '';
                 document.getElementById('formDescription').value = item.description || '';
+                document.getElementById('formPros').value        = formatFormJsonValue(item.pros);
+                document.getElementById('formCons').value        = formatFormJsonValue(item.cons);
                 document.getElementById('formLocation').value    = item.location || '';
+                updateFormFieldControls();
+                [...document.getElementById('formSeason').options].forEach(option => {
+                    option.selected = (item.season || []).includes(option.value);
+                });
                 formSelectedTags = new Set(item.tags || []);
                 renderFormTagChips();
             } else {
                 document.getElementById('formCollection').disabled = false;
                 document.getElementById('addContentForm').reset();
+                updateFormFieldControls();
                 clearFormTags();
             }
 
@@ -1296,6 +1459,12 @@
             modal.classList.remove('opacity-0', 'pointer-events-none');
             modal.children[0].classList.remove('scale-95');
             modal.children[0].classList.add('scale-100');
+        }
+
+        function formatFormJsonValue(value) {
+            if (!value) return '';
+            if (typeof value === 'string') return value;
+            return JSON.stringify(value, null, 2);
         }
 
         function closeAddModal() {

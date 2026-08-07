@@ -6,7 +6,7 @@ Curator Hub is a Dockerized PocketBase + static frontend app. A fresh clone can 
 
 - Application code and container config
 - PocketBase migrations and hooks
-- Frontend assets
+- React + TypeScript frontend source and build config
 
 ## What is not tracked
 
@@ -19,7 +19,8 @@ Curator Hub is a Dockerized PocketBase + static frontend app. A fresh clone can 
 
 1. Clone the repository.
 2. Copy `.env.example` to `.env`.
-3. Start the app:
+3. Optional: set `PB_SUPERUSER_EMAIL` and `PB_SUPERUSER_PASSWORD` in `.env` if you want PocketBase to create or update the superuser automatically on startup.
+4. Start the app:
 
 ```sh
 docker compose up -d --build
@@ -31,25 +32,33 @@ If your machine uses the standalone Compose binary instead of the Docker CLI plu
 docker-compose up -d --build
 ```
 
-4. Visit `http://localhost:3001`.
+5. Visit `http://localhost:3001`.
+
+The frontend is built with React, TypeScript, and Vite during the Docker image build. Local frontend development is available with:
+
+```sh
+cd frontend-react
+npm install
+npm run dev
+```
 
 ## First-run behavior
 
-On the first boot, PocketBase starts with an empty local database. This repository no longer seeds app-specific collections on its own.
+On the first boot, PocketBase starts with an empty local database. This repository no longer seeds app-specific collections on its own. If both `PB_SUPERUSER_EMAIL` and `PB_SUPERUSER_PASSWORD` are set, the PocketBase superuser is created or updated automatically before the server starts.
 
 The frontend will show a first-time setup screen until you create:
 
 - an auth collection named `users`
 - at least one base collection for content
 
-The setup screen points you to the PocketBase dashboard and explains how to:
+When the optional superuser variables are unset, the setup screen opens PocketBase's one-time installer when the database is brand new, and explains how to:
 
 - create the first PocketBase superuser
 - create the `users` auth collection for frontend access
 - add the first frontend user accounts
 - create the first content collection
 
-Important PocketBase detail: on a brand new database, the normal `/_/` login page can appear before you have created any real superuser. In that case, use the one-time installer URL printed in the PocketBase logs:
+If the optional variables are unset, the normal `/_/` login page can appear before you have created any real superuser. The setup screen captures PocketBase's one-time installer token and opens it through the public app address at `http://localhost:3001`. Do not open the internal `0.0.0.0:8080` log URL directly. You can find the token-bearing URL in the PocketBase logs as a fallback:
 
 ```sh
 docker compose logs pocketbase
@@ -104,12 +113,14 @@ The minimum flow is:
 
 The frontend no longer depends on collection names like `restaurants` or `people`.
 
-It will discover any PocketBase base collections automatically, but the current UI still works best when your records use a title field named `title` or `Title`.
+It will discover any PocketBase base collections automatically. The current UI supports `Name` or `Title` as the primary label.
 
-Optional fields the current UI knows how to display are:
+Supported optional fields are:
 
-- `description`
-- `location`
-- `tags`
+- `Notes` or `description`
+- `Pros` and `Cons` (JSON values are supported)
+- `Location` or `location`
+- `Season` (select values are supported)
+- `Tags` or `tags` (JSON values are supported)
 
 You are responsible for setting the collection API rules to match your access model. For a simple authenticated setup, allow logged-in users to list, view, create, update, and delete records.
